@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { getAuth } from "firebase/auth";
 import { v4 as uuidv4 } from "uuid";
@@ -16,7 +16,7 @@ import { db } from "../firebase";
 import { useNavigate, useParams } from "react-router-dom";
 import Spinner from "../components/Spinner";
 
-const CreateListing = () => {
+const EditListing = () => {
   const auth = getAuth();
   const navigate = useNavigate();
   const [geoLocationEnabled, setGeoLocationEnabled] = useState(false);
@@ -72,7 +72,6 @@ const CreateListing = () => {
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         setListing(docSnap.data());
-        console.log(docSnap.data());
         setFormData({
           ...docSnap.data(),
           images: [],
@@ -229,6 +228,7 @@ const CreateListing = () => {
       toast.success("Listing edited successfully");
       navigate(`/category/${formDataCopy.type}/${docRef.id}`);
     } catch (error) {
+      console.error("Error in onSubmit:", error);
       setLoading(false);
       toast.error("Error editing listing. Please try again.");
     }
@@ -239,69 +239,90 @@ const CreateListing = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 py-6 flex flex-col justify-center sm:py-12">
-      <div className="relative py-3 sm:max-w-5xl sm:mx-auto">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-300 to-blue-600 shadow-lg transform -skew-y-6 sm:skew-y-0 sm:-rotate-6 sm:rounded-3xl"></div>
-        <div className="relative px-4 py-10 bg-white shadow-lg sm:rounded-3xl sm:p-20">
-          <h1 className="text-2xl font-bold text-center text-gray-900 mb-6">
+    <div className="min-h-screen bg-white py-6 flex flex-col justify-center sm:py-12">
+      <div className="relative py-3 sm:max-w-3xl sm:mx-auto w-full px-4">
+        <div className="relative p-8 bg-gray-50 shadow-sm rounded-3xl sm:p-10">
+          <h1 className="text-3xl font-bold text-gray-900 mb-8 text-center">
             Edit Listing
           </h1>
           <form onSubmit={onSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Sell / Rent
-                </label>
-                <div className="flex rounded-md shadow-sm">
-                  <button
-                    type="button"
-                    id="type"
-                    value="sale"
-                    onClick={onChange}
-                    className={`w-full px-4 py-2 text-sm font-medium rounded-l-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                      type === "sale"
-                        ? "bg-blue-600 text-white"
-                        : "bg-white text-gray-700 hover:bg-gray-50"
-                    }`}
-                  >
-                    Sell
-                  </button>
-                  <button
-                    type="button"
-                    id="type"
-                    value="rent"
-                    onClick={onChange}
-                    className={`w-full px-4 py-2 text-sm font-medium rounded-r-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                      type === "rent"
-                        ? "bg-blue-600 text-white"
-                        : "bg-white text-gray-700 hover:bg-gray-50"
-                    }`}
-                  >
-                    Rent
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label
-                  htmlFor="name"
-                  className="block text-sm font-medium text-gray-700 mb-2"
+            {/* Type Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Type
+              </label>
+              <div className="flex gap-2 rounded-full shadow-sm border border-gray-200 transition-all duration-300">
+                <button
+                  type="button"
+                  id="type"
+                  value="sale"
+                  onClick={onChange}
+                  className={`flex-1 px-6 py-2.5 text-sm font-medium rounded-full focus:outline-none transition-all duration-300 ${
+                    type === "sale"
+                      ? "bg-primary text-white"
+                      : "bg-white text-gray-700"
+                  }`}
                 >
-                  Name
-                </label>
-                <input
-                  type="text"
-                  id="name"
-                  value={name}
-                  onChange={onChange}
-                  placeholder="Property Name"
-                  maxLength="32"
-                  minLength="10"
-                  required
-                  className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                />
+                  Sell
+                </button>
+                <button
+                  type="button"
+                  id="type"
+                  value="rent"
+                  onClick={onChange}
+                  className={`flex-1 px-6 py-2.5 text-sm font-medium rounded-full focus:outline-none transition-all duration-300 ${
+                    type === "rent"
+                      ? "bg-primary text-white"
+                      : "bg-white text-gray-700"
+                  }`}
+                >
+                  Rent
+                </button>
               </div>
+            </div>
 
+            {/* Name */}
+            <div>
+              <label
+                htmlFor="name"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                Name
+              </label>
+              <input
+                type="text"
+                id="name"
+                value={name}
+                onChange={onChange}
+                placeholder="Property Name"
+                maxLength="32"
+                minLength="10"
+                required
+                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* Description */}
+            <div>
+              <label
+                htmlFor="description"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                Description
+              </label>
+              <textarea
+                id="description"
+                value={description}
+                onChange={onChange}
+                placeholder="Property Description"
+                required
+                rows="4"
+                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* Beds & Baths */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
                 <label
                   htmlFor="bedrooms"
@@ -317,10 +338,9 @@ const CreateListing = () => {
                   min="1"
                   max="50"
                   required
-                  className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
-
               <div>
                 <label
                   htmlFor="bathrooms"
@@ -336,24 +356,27 @@ const CreateListing = () => {
                   min="1"
                   max="50"
                   required
-                  className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
+            </div>
 
+            {/* Parking & Furnished */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Parking spot
                 </label>
-                <div className="flex rounded-md shadow-sm">
+                <div className="flex gap-2 rounded-full shadow-sm border border-gray-200 transition-all duration-300">
                   <button
                     type="button"
                     id="parking"
                     value={true}
                     onClick={onChange}
-                    className={`w-full px-4 py-2 text-sm font-medium rounded-l-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                    className={`flex-1 px-6 py-2.5 text-sm font-medium rounded-full focus:outline-none transition-all duration-300 ${
                       parking
-                        ? "bg-blue-600 text-white"
-                        : "bg-white text-gray-700 hover:bg-gray-50"
+                        ? "bg-primary text-white"
+                        : "bg-white text-gray-700"
                     }`}
                   >
                     Yes
@@ -363,31 +386,30 @@ const CreateListing = () => {
                     id="parking"
                     value={false}
                     onClick={onChange}
-                    className={`w-full px-4 py-2 text-sm font-medium rounded-r-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                    className={`flex-1 px-6 py-2.5 text-sm font-medium rounded-full focus:outline-none transition-all duration-300 ${
                       !parking
-                        ? "bg-blue-600 text-white"
-                        : "bg-white text-gray-700 hover:bg-gray-50"
+                        ? "bg-primary text-white"
+                        : "bg-white text-gray-700"
                     }`}
                   >
                     No
                   </button>
                 </div>
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Furnished
                 </label>
-                <div className="flex rounded-md shadow-sm">
+                <div className="flex gap-2 rounded-full shadow-sm border border-gray-200 transition-all duration-300">
                   <button
                     type="button"
                     id="furnished"
                     value={true}
                     onClick={onChange}
-                    className={`w-full px-4 py-2 text-sm font-medium rounded-l-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                    className={`flex-1 px-6 py-2.5 text-sm font-medium rounded-full focus:outline-none transition-all duration-300 ${
                       furnished
-                        ? "bg-blue-600 text-white"
-                        : "bg-white text-gray-700 hover:bg-gray-50"
+                        ? "bg-primary text-white"
+                        : "bg-white text-gray-700"
                     }`}
                   >
                     Yes
@@ -397,87 +419,92 @@ const CreateListing = () => {
                     id="furnished"
                     value={false}
                     onClick={onChange}
-                    className={`w-full px-4 py-2 text-sm font-medium rounded-r-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                    className={`flex-1 px-6 py-2.5 text-sm font-medium rounded-full focus:outline-none transition-all duration-300 ${
                       !furnished
-                        ? "bg-blue-600 text-white"
-                        : "bg-white text-gray-700 hover:bg-gray-50"
+                        ? "bg-primary text-white"
+                        : "bg-white text-gray-700"
                     }`}
                   >
                     No
                   </button>
                 </div>
               </div>
+            </div>
 
-              <div className="md:col-span-2">
-                <label
-                  htmlFor="address"
-                  className="block text-sm font-medium text-gray-700 mb-2"
-                >
-                  Address
-                </label>
-                <textarea
-                  id="address"
-                  value={address}
-                  onChange={onChange}
-                  placeholder="Address"
-                  required
-                  className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  rows="3"
-                />
+            {/* Address */}
+            <div>
+              <label
+                htmlFor="address"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                Address
+              </label>
+              <textarea
+                id="address"
+                value={address}
+                onChange={onChange}
+                placeholder="Address"
+                required
+                rows="3"
+                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* Geolocation fields */}
+            {!geoLocationEnabled && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div>
+                  <label
+                    htmlFor="latitude"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
+                    Latitude
+                  </label>
+                  <input
+                    type="number"
+                    id="latitude"
+                    value={latitude}
+                    onChange={onChange}
+                    required
+                    min="-90"
+                    max="90"
+                    className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="longitude"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
+                    Longitude
+                  </label>
+                  <input
+                    type="number"
+                    id="longitude"
+                    value={longitude}
+                    onChange={onChange}
+                    required
+                    min="-180"
+                    max="180"
+                    className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
               </div>
+            )}
 
-              {!geoLocationEnabled && (
-                <>
-                  <div>
-                    <label
-                      htmlFor="latitude"
-                      className="block text-sm font-medium text-gray-700 mb-2"
-                    >
-                      Latitude
-                    </label>
-                    <input
-                      type="number"
-                      id="latitude"
-                      value={latitude}
-                      onChange={onChange}
-                      required
-                      min="-90"
-                      max="90"
-                      className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label
-                      htmlFor="longitude"
-                      className="block text-sm font-medium text-gray-700 mb-2"
-                    >
-                      Longitude
-                    </label>
-                    <input
-                      type="number"
-                      id="longitude"
-                      value={longitude}
-                      onChange={onChange}
-                      required
-                      min="-180"
-                      max="180"
-                      className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                </>
-              )}
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Images
-                </label>
-                <div
-                  className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md"
-                  onDragOver={(e) => {
+            {/* Images */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Images
+              </label>
+              <div
+                className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-200 border-dashed rounded-lg"
+                {...{
+                  onDragOver: (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                  }}
-                  onDrop={(e) => {
+                  },
+                  onDrop: (e) => {
                     e.preventDefault();
                     e.stopPropagation();
                     const files = Array.from(e.dataTransfer.files)
@@ -500,161 +527,161 @@ const CreateListing = () => {
                       ...prevState,
                       images: [...prevState.images, ...files].slice(0, 6),
                     }));
-                  }}
-                >
-                  <div className="space-y-1 text-center">
-                    <svg
-                      className="mx-auto h-12 w-12 text-gray-400"
-                      stroke="currentColor"
-                      fill="none"
-                      viewBox="0 0 48 48"
-                      aria-hidden="true"
+                  },
+                }}
+              >
+                <div className="space-y-1 text-center">
+                  <svg
+                    className="mx-auto h-12 w-12 text-gray-400"
+                    stroke="currentColor"
+                    fill="none"
+                    viewBox="0 0 48 48"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  <div className="flex text-sm text-gray-600">
+                    <label
+                      htmlFor="images"
+                      className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
                     >
-                      <path
-                        d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                        strokeWidth={2}
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
+                      <span>Upload files</span>
+                      <input
+                        id="images"
+                        name="images"
+                        type="file"
+                        multiple
+                        onChange={onChange}
+                        accept="image/*"
+                        className="sr-only"
                       />
-                    </svg>
-                    <div className="flex text-sm text-gray-600">
-                      <label
-                        htmlFor="images"
-                        className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
+                    </label>
+                    <p className="pl-1">or drag and drop</p>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    PNG, JPG, JPEG up to 2MB (max 6 files)
+                  </p>
+                </div>
+              </div>
+              {formData.images.length > 0 && (
+                <div className="mt-2">
+                  <p className="text-sm text-gray-500">
+                    {formData.images.length} file(s) selected
+                  </p>
+                  <ul className="mt-1 text-xs text-gray-500">
+                    {Array.from(formData.images).map((file, index) => (
+                      <li
+                        key={index}
+                        className="flex justify-between items-center"
                       >
-                        <span>Upload files</span>
-                        <input
-                          id="images"
-                          name="images"
-                          type="file"
-                          multiple
-                          onChange={(e) => {
-                            const files = Array.from(e.target.files)
-                              .filter((file) => {
-                                if (!file.type.startsWith("image/")) {
-                                  toast.error(
-                                    `${file.name} is not an image file`
-                                  );
-                                  return false;
-                                }
-                                if (file.size > 2 * 1024 * 1024) {
-                                  toast.error(
-                                    `${file.name} is larger than 2MB`
-                                  );
-                                  return false;
-                                }
-                                return true;
-                              })
-                              .slice(0, 6);
-                            if (files.length > 6) {
-                              toast.error("You can only upload up to 6 images");
-                            }
+                        <span>
+                          {file.name} ({(file.size / 1024 / 1024).toFixed(2)}{" "}
+                          MB)
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
                             setFormData((prevState) => ({
                               ...prevState,
-                              images: [...prevState.images, ...files].slice(
-                                0,
-                                6
+                              images: prevState.images.filter(
+                                (_, i) => i !== index
                               ),
                             }));
                           }}
-                          accept="image/*"
-                          className="sr-only"
-                        />
-                      </label>
-                      <p className="pl-1">or drag and drop</p>
-                    </div>
-                    <p className="text-xs text-gray-500">
-                      PNG, JPG, JPEG up to 2MB (max 6 files)
-                    </p>
-                  </div>
-                </div>
-                {formData.images.length > 0 && (
-                  <div className="mt-2">
-                    <p className="text-sm text-gray-500">
-                      {formData.images.length} file(s) selected
-                    </p>
-                    <ul className="mt-1 text-xs text-gray-500">
-                      {Array.from(formData.images).map((file, index) => (
-                        <li
-                          key={index}
-                          className="flex justify-between items-center"
+                          className="text-red-500 hover:text-red-700"
                         >
-                          <span>
-                            {file.name} ({(file.size / 1024 / 1024).toFixed(2)}{" "}
-                            MB)
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setFormData((prevState) => ({
-                                ...prevState,
-                                images: prevState.images.filter(
-                                  (_, i) => i !== index
-                                ),
-                              }));
-                            }}
-                            className="text-red-500 hover:text-red-700"
-                          >
-                            Remove
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
+                          Remove
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Offer
-                </label>
-                <div className="flex rounded-md shadow-sm">
-                  <button
-                    type="button"
-                    id="offer"
-                    value={true}
-                    onClick={onChange}
-                    className={`w-full px-4 py-2 text-sm font-medium rounded-l-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                      offer
-                        ? "bg-blue-600 text-white"
-                        : "bg-white text-gray-700 hover:bg-gray-50"
-                    }`}
-                  >
-                    Yes
-                  </button>
-                  <button
-                    type="button"
-                    id="offer"
-                    value={false}
-                    onClick={onChange}
-                    className={`w-full px-4 py-2 text-sm font-medium rounded-r-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                      !offer
-                        ? "bg-blue-600 text-white"
-                        : "bg-white text-gray-700 hover:bg-gray-50"
-                    }`}
-                  >
-                    No
-                  </button>
+            {/* Offer */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Offer
+              </label>
+              <div className="flex gap-2 rounded-full shadow-sm border border-gray-200 transition-all duration-300">
+                <button
+                  type="button"
+                  id="offer"
+                  value={true}
+                  onClick={onChange}
+                  className={`flex-1 px-6 py-2.5 text-sm font-medium rounded-full focus:outline-none transition-all duration-300 ${
+                    offer ? "bg-primary text-white" : "bg-white text-gray-700"
+                  }`}
+                >
+                  Yes
+                </button>
+                <button
+                  type="button"
+                  id="offer"
+                  value={false}
+                  onClick={onChange}
+                  className={`flex-1 px-6 py-2.5 text-sm font-medium rounded-full focus:outline-none transition-all duration-300 ${
+                    !offer ? "bg-primary text-white" : "bg-white text-gray-700"
+                  }`}
+                >
+                  No
+                </button>
+              </div>
+            </div>
+
+            {/* Regular Price */}
+            <div>
+              <label
+                htmlFor="regularPrice"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                Regular price
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  id="regularPrice"
+                  value={regularPrice}
+                  onChange={onChange}
+                  min="50"
+                  max="400000000"
+                  required
+                  className="w-full px-4 py-3 pr-16 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="0"
+                />
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                  <span className="text-gray-500 sm:text-sm">
+                    MAD{type === "rent" ? "/month" : ""}
+                  </span>
                 </div>
               </div>
+            </div>
 
+            {/* Discounted Price */}
+            {offer && (
               <div>
                 <label
-                  htmlFor="regularPrice"
+                  htmlFor="discountedPrice"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
-                  Regular price
+                  Discounted price
                 </label>
-                <div className="mt-1 relative rounded-md shadow-sm">
+                <div className="relative">
                   <input
                     type="number"
-                    id="regularPrice"
-                    value={regularPrice}
+                    id="discountedPrice"
+                    value={discountedPrice}
                     onChange={onChange}
                     min="50"
                     max="400000000"
-                    required
-                    className="block w-full pr-16 py-2 sm:text-sm border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    required={offer}
+                    className="w-full px-4 py-3 pr-16 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="0"
                   />
                   <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
@@ -664,45 +691,15 @@ const CreateListing = () => {
                   </div>
                 </div>
               </div>
+            )}
 
-              {offer && (
-                <div>
-                  <label
-                    htmlFor="discountedPrice"
-                    className="block text-sm font-medium text-gray-700 mb-2"
-                  >
-                    Discounted price
-                  </label>
-                  <div className="mt-1 relative rounded-md shadow-sm">
-                    <input
-                      type="number"
-                      id="discountedPrice"
-                      value={discountedPrice}
-                      onChange={onChange}
-                      min="50"
-                      max="400000000"
-                      required={offer}
-                      className="block w-full pr-16 py-2 sm:text-sm border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="0"
-                    />
-                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                      <span className="text-gray-500 sm:text-sm">
-                        MAD{type === "rent" ? "/month" : ""}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div>
-              <button
-                type="submit"
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                Edit Listing
-              </button>
-            </div>
+            {/* Submit Button */}
+            <button
+              type="submit"
+              className="w-full bg-primary text-white px-6 py-2.5 rounded-full font-medium text-sm transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+            >
+              Edit Listing
+            </button>
           </form>
         </div>
       </div>
@@ -710,4 +707,4 @@ const CreateListing = () => {
   );
 };
 
-export default CreateListing;
+export default EditListing;

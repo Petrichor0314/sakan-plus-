@@ -13,8 +13,22 @@ import { Link } from "react-router-dom";
 import ListingItem from "../components/ListingItem";
 import Slider from "../components/Slider";
 import { db } from "../firebase";
+import SearchBar from "@/components/SearchBar";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function Home() {
+  const [currentText, setCurrentText] = useState("Real Estate");
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentText((prev) =>
+        prev === "Real Estate" ? "Dream Home" : "Real Estate"
+      );
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   // Offers
   const [offerListings, setOfferListings] = useState(null);
   useEffect(() => {
@@ -106,70 +120,49 @@ export default function Home() {
     fetchListings();
   }, []);
   return (
-    <div>
-      <Slider />
-      <div className="max-w-6xl mx-auto pt-4 space-y-6">
-        {offerListings && offerListings.length > 0 && (
-          <div className="m-2 mb-6">
-            <h2 className="px-3 text-2xl mt-6 font-semibold">Recent offers</h2>
-            <Link to="/offers">
-              <p className="px-3 text-sm text-blue-600 hover:text-blue-800 transition duration-150 ease-in-out">
-                Show more offers
-              </p>
-            </Link>
-            <ul className="sm:grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ">
-              {offerListings.map((listing) => (
-                <ListingItem
-                  key={listing.id}
-                  listing={listing.data}
-                  id={listing.id}
-                />
-              ))}
-            </ul>
+    <div
+      className="relative min-h-screen bg-cover bg-center bg-no-repeat before:content-[''] before:absolute before:inset-0 before:bg-black/40"
+      style={{
+        backgroundImage: "url('/modern-house.jpg')", // Make sure to add this image to your public folder
+      }}
+    >
+      <div className="relative pt-32 pb-20">
+        <div className="text-center">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-4">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-x-2">
+              <span>Find Your</span>
+              <div className="h-[60px] sm:h-[72px] overflow-hidden">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={currentText}
+                    initial={{ y: 50 }}
+                    animate={{ y: 0 }}
+                    exit={{ y: -50 }}
+                    transition={{
+                      duration: 0.35,
+                      ease: "easeInOut",
+                    }}
+                  >
+                    {currentText}
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+            </div>
+          </h1>
+
+          <p className="text-white/80 text-lg max-w-2xl mx-auto mb-12">
+            We are a real estate agency that will help you find the best
+            residence you dream of, let's discuss for your dream house?
+          </p>
+
+          <div className="text-left">
+            <SearchBar />
           </div>
-        )}
-        {rentListings && rentListings.length > 0 && (
-          <div className="m-2 mb-6">
-            <h2 className="px-3 text-2xl mt-6 font-semibold">
-              Places for rent
-            </h2>
-            <Link to="/category/rent">
-              <p className="px-3 text-sm text-blue-600 hover:text-blue-800 transition duration-150 ease-in-out">
-                Show more places for rent
-              </p>
-            </Link>
-            <ul className="sm:grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ">
-              {rentListings.map((listing) => (
-                <ListingItem
-                  key={listing.id}
-                  listing={listing.data}
-                  id={listing.id}
-                />
-              ))}
-            </ul>
-          </div>
-        )}
-        {saleListings && saleListings.length > 0 && (
-          <div className="m-2 mb-6">
-            <h2 className="px-3 text-2xl mt-6 font-semibold">
-              Places for sale
-            </h2>
-            <Link to="/category/sale">
-              <p className="px-3 text-sm text-blue-600 hover:text-blue-800 transition duration-150 ease-in-out">
-                Show more places for sale
-              </p>
-            </Link>
-            <ul className="sm:grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ">
-              {saleListings.map((listing) => (
-                <ListingItem
-                  key={listing.id}
-                  listing={listing.data}
-                  id={listing.id}
-                />
-              ))}
-            </ul>
-          </div>
-        )}
+        </div>
+      </div>
+      {/* Test div to reserve space */}
+      <div className="w-full h-[500px] bg-white">
+        {/* This is just to test the layout */}
       </div>
     </div>
   );

@@ -3,7 +3,7 @@ import { MapPin, Bed, Bath, Move, Pencil, Trash2 } from "lucide-react";
 
 export default function ListingItem({ listing, id, onEdit, onDelete }) {
   return (
-    <div className="group overflow-hidden rounded-[16px] border border-gray-200 bg-white w-full max-w-[440px] shadow-sm hover:shadow-md transition-shadow">
+    <div className="group overflow-hidden rounded-[16px] border border-gray-200 bg-white w-full max-w-[440px] ">
       <Link to={`/category/${listing.type}/${id}`} className="block">
         <div className="relative overflow-hidden h-[260px] w-full">
           <img
@@ -15,7 +15,7 @@ export default function ListingItem({ listing, id, onEdit, onDelete }) {
 
           {/* Top Left Badges */}
           <div className="absolute left-4 top-4 flex gap-2">
-            {listing.featured && (
+            {listing.offer && (
               <span className="rounded-full bg-blue-600 px-4 py-1 text-sm font-medium text-white">
                 Featured
               </span>
@@ -64,8 +64,8 @@ export default function ListingItem({ listing, id, onEdit, onDelete }) {
           )}
         </div>
 
-        <div className="p-6">
-          <h3 className="text-xl font-semibold text-gray-900 mb-2 truncate">
+        <div className="p-4">
+          <h3 className="text-xl font-semibold text-gray-900 mb-2 truncate hover:text-blue-600 cursor-pointer transition-colors ease-in-out duration-300">
             {listing.name || "Property Title"}
           </h3>
 
@@ -86,10 +86,10 @@ export default function ListingItem({ listing, id, onEdit, onDelete }) {
             </div>
           </div>
 
-          <div className="mt-6 border-t border-gray-200 pt-6">
+          <div className=" mt-4 border-t border-gray-200 pt-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <img
+              <div className="flex items-center gap-2">
+                {/* <img
                   src="/placeholder-avatar.svg"
                   alt="Agent"
                   width={44}
@@ -98,7 +98,7 @@ export default function ListingItem({ listing, id, onEdit, onDelete }) {
                 />
                 <span className="text-sm font-medium text-gray-900">
                   Agent Name
-                </span>
+                </span> */}
               </div>
               <span className="text-xl font-bold text-gray-900">
                 {listing.offer

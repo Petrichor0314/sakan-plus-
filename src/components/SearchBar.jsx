@@ -1,37 +1,63 @@
 import * as React from "react";
-import { MapPin, Search, Settings2 } from "lucide-react";
+import { MapPin, Search, Settings2, ChevronDown } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { Range } from "react-range";
 import CustomSelect from "./CustomSelect";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
-export default function SearchBar() {
-  const [activeTab, setActiveTab] = useState("rent");
+export default function SearchBar({ variant = "default" }) {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  const [activeTab, setActiveTab] = useState(
+    searchParams.get("type") || "rent"
+  );
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
-  const [keyword, setKeyword] = useState("");
-  const [location, setLocation] = useState("");
+  const [keyword, setKeyword] = useState(searchParams.get("keyword") || "");
+  const [location, setLocation] = useState(searchParams.get("location") || "");
 
-  const [selectedType, setSelectedType] = useState("All");
+  const [selectedType, setSelectedType] = useState(
+    searchParams.get("propertyType") || "All"
+  );
   const [isTypeOpen, setIsTypeOpen] = useState(false);
 
-  const [selectedCountry, setSelectedCountry] = useState("Property Country");
+  const [selectedCountry, setSelectedCountry] = useState(
+    searchParams.get("country") || "Property Country"
+  );
   const [isCountryOpen, setIsCountryOpen] = useState(false);
 
-  const [priceRange, setPriceRange] = useState([351, 700]);
-  const [sizeRange, setSizeRange] = useState([0, 1000]);
+  const [priceRange, setPriceRange] = useState([
+    parseInt(searchParams.get("minPrice")) || 351,
+    parseInt(searchParams.get("maxPrice")) || 700,
+  ]);
+  const [sizeRange, setSizeRange] = useState([
+    parseInt(searchParams.get("minSize")) || 0,
+    parseInt(searchParams.get("maxSize")) || 1000,
+  ]);
 
-  const [selectedLabels, setSelectedLabels] = useState("Property Labels");
+  const [selectedLabels, setSelectedLabels] = useState(
+    searchParams.get("labels") || "Property Labels"
+  );
   const [isLabelsOpen, setIsLabelsOpen] = useState(false);
 
-  const [selectedRooms, setSelectedRooms] = useState("Rooms");
+  const [selectedRooms, setSelectedRooms] = useState(
+    searchParams.get("rooms") || "Rooms"
+  );
   const [isRoomsOpen, setIsRoomsOpen] = useState(false);
 
-  const [selectedBaths, setSelectedBaths] = useState("Baths: Any");
+  const [selectedBaths, setSelectedBaths] = useState(
+    searchParams.get("baths") || "Baths: Any"
+  );
   const [isBathsOpen, setIsBathsOpen] = useState(false);
 
-  const [selectedAmenities, setSelectedAmenities] = useState([]);
+  const [selectedAmenities, setSelectedAmenities] = useState(
+    searchParams.get("amenities")
+      ? searchParams.get("amenities").split(",")
+      : []
+  );
 
   // Sample data arrays
   const types = ["All", "House", "Apartment", "Condo"];
@@ -76,6 +102,31 @@ export default function SearchBar() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Determine if we're using the listings variant
+  const isListings = variant === "listings";
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+
+    const searchParams = new URLSearchParams({
+      type: activeTab,
+      keyword,
+      location,
+      propertyType: selectedType,
+      country: selectedCountry,
+      minPrice: priceRange[0],
+      maxPrice: priceRange[1],
+      minSize: sizeRange[0],
+      maxSize: sizeRange[1],
+      labels: selectedLabels,
+      rooms: selectedRooms,
+      baths: selectedBaths,
+      amenities: selectedAmenities.join(","),
+    });
+
+    navigate(`/listings?${searchParams.toString()}`);
+  };
 
   return (
     <div className="w-full min-h-screen sm:min-h-fit">
@@ -213,9 +264,7 @@ export default function SearchBar() {
                 </button>
                 <button
                   className="flex-1 lg:w-[160px] inline-flex items-center justify-center gap-3 rounded-full bg-[#1D4ED8] px-4 sm:px-10 h-12 text-sm font-medium text-white hover:bg-[#1D4ED8]/90"
-                  onClick={(e) => {
-                    e.preventDefault();
-                  }}
+                  onClick={handleSearch}
                 >
                   <Search className="h-5 w-5" />
                   {!isMobile && "Search"}
@@ -397,7 +446,7 @@ export default function SearchBar() {
                                 );
                               }
                             }}
-                            className="rounded border-gray-300 text-[#1D4ED8] focus:ring-0 focus:ring-offset-   0"
+                            className="rounded border-gray-300 text-[#1D4ED8] focus:ring-0 focus:ring-offset-0"
                           />
                           <span>{amenity}</span>
                         </label>

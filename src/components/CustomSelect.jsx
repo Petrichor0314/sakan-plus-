@@ -13,6 +13,7 @@ export default function CustomSelect({
       <div className="relative">
         <label className="text-gray-900 text-sm block mb-2">{label}</label>
         <button
+          type="button"
           onClick={() => setIsOpen(!isOpen)}
           className="w-full bg-white rounded-full py-2.5 px-4 text-sm text-left flex items-center justify-between cursor-pointer border border-gray-200 focus:outline-none"
         >

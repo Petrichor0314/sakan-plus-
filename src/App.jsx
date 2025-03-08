@@ -14,6 +14,8 @@ import EditListing from "./pages/EditListing";
 import NotFound from "./pages/NotFound";
 import Category from "./pages/Category";
 import Listings from "./pages/Listings";
+import "leaflet/dist/leaflet.css";
+import { MapContainer, TileLayer } from "react-leaflet";
 
 function App() {
   return (

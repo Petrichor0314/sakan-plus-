@@ -35,10 +35,13 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import { Pagination } from "swiper";
 import "swiper/css";
 import "swiper/css/pagination";
+import { cn } from "@/lib/utils"; // if you're using a utility to combine class names
 
 export default function Home() {
   const navigate = useNavigate();
-  const [currentText, setCurrentText] = useState("Real Estate");
+  const texts = ["Real Estate", "Dream Home"];
+  const [currentTextIndex, setCurrentTextIndex] = useState(0);
+  const [isVisible, setIsVisible] = useState(true);
   const [activeCategory, setActiveCategory] = useState("all");
 
   // Refs for scroll animations
@@ -76,14 +79,19 @@ export default function Home() {
   };
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentText((prev) =>
-        prev === "Real Estate" ? "Dream Home" : "Real Estate"
-      );
-    }, 3000);
+    const intervalId = setInterval(() => {
+      // Trigger fade out
+      setIsVisible(false);
 
-    return () => clearInterval(interval);
-  }, []);
+      // After the fade-out duration (500ms), update the text and fade in
+      setTimeout(() => {
+        setCurrentTextIndex((prevIndex) => (prevIndex + 1) % texts.length);
+        setIsVisible(true);
+      }, 500); // should match the CSS transition duration
+    }, 3000); // change text every 3000ms
+
+    return () => clearInterval(intervalId);
+  }, [texts.length]);
 
   // State for all listing types
   const [offerListings, setOfferListings] = useState(null);
@@ -193,7 +201,6 @@ export default function Home() {
           });
         });
         setHouseListings(listings);
-        console.log("House listings fetched:", listings);
       } catch (error) {
         console.log("Error fetching house listings:", error);
       }
@@ -220,7 +227,6 @@ export default function Home() {
           });
         });
         setApartmentListings(listings);
-        console.log("Apartment listings fetched:", listings);
       } catch (error) {
         console.log("Error fetching apartment listings:", error);
       }
@@ -247,20 +253,12 @@ export default function Home() {
           });
         });
         setCondoListings(listings);
-        console.log("Condo listings fetched:", listings);
       } catch (error) {
         console.log("Error fetching condo listings:", error);
       }
     }
     fetchListings();
   }, []);
-
-  console.log("offerListings", offerListings);
-  console.log("rentListings", rentListings);
-  console.log("saleListings", saleListings);
-  console.log("houseListings", houseListings);
-  console.log("apartmentListings", apartmentListings);
-  console.log("condoListings", condoListings);
 
   // Function to get the listings based on active category
   const getListingsToDisplay = () => {
@@ -384,23 +382,21 @@ export default function Home() {
       <div className="relative pt-32 pb-48">
         <div className="text-center">
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-4">
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-x-2">
-              <span>Find Your</span>
-              <div className="h-[60px] sm:h-[72px] overflow-hidden">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={currentText}
-                    initial={{ y: 50 }}
-                    animate={{ y: 0 }}
-                    exit={{ y: -50 }}
-                    transition={{
-                      duration: 0.35,
-                      ease: "easeInOut",
-                    }}
-                  >
-                    {currentText}
-                  </motion.div>
-                </AnimatePresence>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-x-0.5">
+              <span>Find Your&nbsp;</span>
+              <div className="relative inline-block h-[60px] sm:h-[72px] overflow-hidden align-middle w-[350px] sm:w-[400px]">
+                {/* Invisible span to reserve space for the longest text */}
+                <span className="invisible whitespace-nowrap">
+                  {texts.reduce((a, b) => (a.length > b.length ? a : b), "")}
+                </span>
+                <span
+                  className={cn(
+                    "absolute left-0 top-1/2 transform -translate-y-1/2 transition-opacity duration-500 ease-in-out whitespace-nowrap",
+                    isVisible ? "opacity-100" : "opacity-0"
+                  )}
+                >
+                  {texts[currentTextIndex]}
+                </span>
               </div>
             </div>
           </h1>

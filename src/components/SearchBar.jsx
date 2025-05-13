@@ -258,7 +258,7 @@ export default function SearchBar({ variant = "home" }) {
               isListings ? "shadow-none" : ""
             } px-2 py-2`}
           >
-            <div className="flex flex-col md:flex-row gap-4 justify-between items-center px-4 md:px-6 py-2 md:rounded-xl">
+            <div className="flex flex-col md:flex-row gap-4 justify-center items-center px-4  lg:ml-16 md:px-6 py-2 md:rounded-xl">
               {/* Type Select */}
               <div className="w-full md:w-40 flex flex-col justify-center relative">
                 <div className="text-xs text-gray-500">Type</div>

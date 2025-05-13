@@ -37,9 +37,9 @@ function OAuth() {
     <button
       type="button"
       onClick={onGoogleClick}
-      className="flex items-center justify-center w-full py-2 bg-[#DB4437] text-white rounded-md px-7 py-3 uppercase font-medium text-sm hover:bg-red-800 active:bg-red-900 shadow-md hover:shadow-lg active:shadow-lg transition duration-150 ease-in-out"
+      className="flex items-center justify-center w-full h-12 bg-white border border-gray-300 rounded-full text-gray-700 font-medium text-sm transition-all duration-300 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
     >
-      <FcGoogle className="text-2xl bg-white rounded-full mr-2 " />
+      <FcGoogle className="text-2xl mr-2" />
       Continue with Google
     </button>
   );

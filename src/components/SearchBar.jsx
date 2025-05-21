@@ -1,21 +1,80 @@
 import * as React from "react";
-import { MapPin, Search, Settings2, ChevronDown } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
-import { Range } from "react-range";
-import CustomSelect from "./CustomSelect";
-import { motion, AnimatePresence } from "framer-motion";
-import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import {
+  MapPin,
+  Search,
+  Settings2,
+  ChevronDown,
+  X,
+  Check,
+  ChevronsUpDown,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+
+// Shadcn UI Components
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { DualRangeSlider } from "@/components/ui/dual-range-slider";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import {
+  Collapsible,
+  CollapsibleTrigger,
+  CollapsibleContent,
+} from "@/components/ui/collapsible";
+import {
+  Sheet,
+  SheetTrigger,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetClose,
+} from "@/components/ui/sheet";
+import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area"; // For scrollable Sheet content
+
+// Imports for Combobox
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+
+// Magic UI Components
+import { ShineBorder } from "@/components/magicui/shine-border";
+// import ShimmerButton from "@/components/magicui/shimmer-button"; // Using Shadcn Button for now, can be swapped
+// import Particles from "@/components/magicui/particles"; // Optional for advanced section bg
 
 export default function SearchBar({ variant = "home" }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
+  // --- STATE MANAGEMENT (largely preserved) ---
   const [activeTab, setActiveTab] = useState(
     searchParams.get("type") || "rent"
   );
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showAdvancedDesktop, setShowAdvancedDesktop] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
+  // Location state - current 'location' not directly mapped to an input, consider adding one or removing if not used
   const [location, setLocation] = useState(searchParams.get("location") || "");
   const [selectedRegion, setSelectedRegion] = useState(
     searchParams.get("region") || ""
@@ -23,13 +82,14 @@ export default function SearchBar({ variant = "home" }) {
   const [selectedCity, setSelectedCity] = useState(
     searchParams.get("city") || ""
   );
-  const [isRegionOpen, setIsRegionOpen] = useState(false);
-  const [isCityOpen, setIsCityOpen] = useState(false);
+
+  // State for Combobox open/close
+  const [regionOpen, setRegionOpen] = React.useState(false);
+  const [cityOpen, setCityOpen] = React.useState(false);
 
   const [selectedPropertyType, setSelectedPropertyType] = useState(
     searchParams.get("propertyType") || "All"
   );
-  const [isPropertyTypeOpen, setIsPropertyTypeOpen] = useState(false);
 
   const [priceRange, setPriceRange] = useState([
     parseInt(searchParams.get("minPrice")) || 0,
@@ -43,22 +103,20 @@ export default function SearchBar({ variant = "home" }) {
   const [selectedRooms, setSelectedRooms] = useState(
     searchParams.get("rooms") || "Rooms"
   );
-  const [isRoomsOpen, setIsRoomsOpen] = useState(false);
-
   const [selectedBaths, setSelectedBaths] = useState(
     searchParams.get("baths") || "Baths: Any"
   );
-  const [isBathsOpen, setIsBathsOpen] = useState(false);
-
   const [selectedAmenities, setSelectedAmenities] = useState(
     searchParams.get("amenities")
       ? searchParams.get("amenities").split(",")
       : []
   );
 
-  // Moroccan regions
+  // Refs - primarily for click-outside, may be less needed with Shadcn components
+  const advancedPanelRef = useRef(null); // For Collapsible, may not need custom click-outside
+
+  // --- DATA (preserved) ---
   const moroccanRegions = [
-    "All Regions",
     "Tanger-Tétouan-Al Hoceïma",
     "L'Oriental",
     "Fès-Meknès",
@@ -72,10 +130,8 @@ export default function SearchBar({ variant = "home" }) {
     "Laâyoune-Sakia El Hamra",
     "Dakhla-Oued Ed-Dahab",
   ];
-
-  // Cities by region
+  moroccanRegions.unshift("All Regions"); // Ensure "All Regions" is an option if selectedRegion can be empty
   const citiesByRegion = {
-    "All Regions": [],
     "Tanger-Tétouan-Al Hoceïma": [
       "Tanger",
       "Tétouan",
@@ -90,9 +146,9 @@ export default function SearchBar({ variant = "home" }) {
     "Casablanca-Settat": [
       "Casablanca",
       "Settat",
-      "El Kelaa M'Gouna",
+      "El Kelaa M'Gouna", // Note: El Kelaa M'Gouna is also listed under Marrakech-Safi in your data. You might want to verify/deduplicate.
       "Mohammedia",
-      "Kenitra",
+      "Kenitra", // Note: Kenitra is also a city in Rabat-Salé-Kénitra. This might be intentional or a slight variation in data.
     ],
     "Marrakech-Safi": [
       "Marrakech",
@@ -103,16 +159,16 @@ export default function SearchBar({ variant = "home" }) {
     ],
     "Drâa-Tafilalet": [
       "Errachidia",
-      "Ifrane",
+      "Ifrane", // Note: Ifrane is also listed under Fès-Meknès.
       "Tafilalet",
       "Tinghir",
       "Zagora",
     ],
-    "Souss-Massa": ["Agadir", "Taroudant", "Ouarzazate", "Essaouira", "Zagora"],
+    "Souss-Massa": ["Agadir", "Taroudant", "Ouarzazate", "Essaouira", "Zagora"], // Note: Ouarzazate, Essaouira, Zagora appear in multiple regions.
     "Guelmim-Oued Noun": [
       "Guelmim",
       "Oued Noun",
-      "Dakhla",
+      "Dakhla", // Note: Dakhla, Laayoune, Boujdour appear in multiple southern regions.
       "Laayoune",
       "Boujdour",
     ],
@@ -121,7 +177,7 @@ export default function SearchBar({ variant = "home" }) {
       "Sakia El Hamra",
       "Dakhla",
       "Boujdour",
-      "El Aaiún",
+      "El Aaiún", // Note: El Aaiún is another name for Laayoune.
     ],
     "Dakhla-Oued Ed-Dahab": [
       "Dakhla",
@@ -131,416 +187,522 @@ export default function SearchBar({ variant = "home" }) {
       "Boujdour",
     ],
   };
-
   const propertyTypes = ["All", "House", "Apartment", "Condo"];
   const rooms = ["Rooms", "1", "2", "3", "4+"];
   const baths = ["Baths: Any", "1", "2", "3", "4+"];
+  const amenitiesList = [
+    "Bed Linens",
+    "Carbon Alarm",
+    "Check-in Lockbox",
+    "Coffee Maker",
+    "Dishwasher",
+    "Extra Pillows",
+    "First Aid Kit",
+    "Hangers",
+    "Iron",
+    "Microwave",
+    "Refrigerator",
+    "Security Cameras",
+    "Smoke alarm",
+    "TV Standard Cable",
+  ];
 
-  // Ref for the advanced panel
-  const advancedPanelRef = useRef(null);
-
-  // Check screen size
+  // --- EFFECTS (preserved, adjusted) ---
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  // Click outside handler
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (
-        advancedPanelRef.current &&
-        !advancedPanelRef.current.contains(event.target) &&
-        !event.target.closest(".advanced-search-button")
-      ) {
-        event.preventDefault();
-        setShowAdvanced(false);
-        // Close all dropdowns
-        setIsPropertyTypeOpen(false);
-        setIsRegionOpen(false);
-        setIsCityOpen(false);
-        setIsRoomsOpen(false);
-        setIsBathsOpen(false);
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
   const handleSearch = (e) => {
-    e.preventDefault();
-
-    const searchParams = new URLSearchParams({
+    if (e) e.preventDefault();
+    const queryParams = new URLSearchParams({
       type: activeTab,
-      location,
-      region: selectedRegion,
-      city: selectedCity,
-      propertyType: selectedPropertyType,
-      minPrice: priceRange[0],
-      maxPrice: priceRange[1],
-      minSize: sizeRange[0],
-      maxSize: sizeRange[1],
-      rooms: selectedRooms,
-      baths: selectedBaths,
-      amenities: selectedAmenities.join(","),
+      ...(location && { location }),
+      ...(selectedRegion &&
+        selectedRegion !== "All Regions" && { region: selectedRegion }),
+      ...(selectedCity && { city: selectedCity }),
+      ...(selectedPropertyType &&
+        selectedPropertyType !== "All" && {
+          propertyType: selectedPropertyType,
+        }),
+      minPrice: priceRange[0].toString(),
+      maxPrice: priceRange[1].toString(),
+      minSize: sizeRange[0].toString(),
+      maxSize: sizeRange[1].toString(),
+      ...(selectedRooms &&
+        selectedRooms !== "Rooms" && { rooms: selectedRooms }),
+      ...(selectedBaths &&
+        selectedBaths !== "Baths: Any" && { baths: selectedBaths }),
+      ...(selectedAmenities.length > 0 && {
+        amenities: selectedAmenities.join(","),
+      }),
     });
+    navigate(`/listings?${queryParams.toString()}`);
+  };
 
-    navigate(`/listings?${searchParams.toString()}`);
+  const handleTabChange = (value) => {
+    setActiveTab(value);
+    // Potentially trigger a search or update other filters when tab changes
   };
 
   const isListings = variant === "listings";
 
-  return (
-    <div className="w-full px-4 md:px-0">
-      {!isListings && (
-        /* Type Toggle - Centered at top - Only show in home variant */
-        <div className="flex justify-center gap-2 mb-4">
-          <button
-            onClick={() => setActiveTab("rent")}
-            className={`px-6 md:px-12 py-2 md:py-3 text-sm font-medium rounded-full transition-all duration-200 ease-in-out ${
-              activeTab === "rent"
-                ? "bg-[#1D4ED8] text-white"
-                : "bg-transparent text-white border border-white"
-            }`}
+  const AdvancedFiltersContent = () => (
+    <div className="space-y-6">
+      {" "}
+      {/* Price and Size Range Sliders */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div>
+          <Label
+            htmlFor="priceRange"
+            className="text-sm font-medium text-gray-700 dark:text-gray-300"
           >
-            For Rent
-          </button>
-          <button
-            onClick={() => setActiveTab("sale")}
-            className={`px-6 md:px-12 py-2 md:py-3 text-sm font-medium rounded-full transition-all duration-200 ${
-              activeTab === "sale"
-                ? "bg-[#1D4ED8] text-white"
-                : "bg-traparent text-white border border-white"
-            }`}
-          >
-            For Sale
-          </button>
+            Price: MAD {priceRange[0]} - MAD {priceRange[1]}
+          </Label>
+          <DualRangeSlider
+            id="priceRange"
+            min={0}
+            max={30000} // Adjust max as needed
+            step={1000}
+            value={priceRange}
+            onValueChange={setPriceRange}
+            className="mt-2"
+          />
         </div>
-      )}
-
-      {/* Main Search Bar */}
-      <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-center gap-4">
-          {isListings && (
-            /* Type Toggle - Show beside search bar in listings variant */
-            <div className="flex gap-2">
-              <button
-                onClick={() => setActiveTab("rent")}
-                className={`px-8 py-3 text-sm font-medium rounded-full transition-all duration-200 ${
-                  activeTab === "rent"
-                    ? "bg-[#1D4ED8] text-white"
-                    : "border border-[#1D4ED8] bg-white text-[#1D4ED8] hover:bg-gray-50"
-                }`}
-              >
-                For Rent
-              </button>
-              <button
-                onClick={() => setActiveTab("sale")}
-                className={`px-8 py-3 text-sm font-medium rounded-full transition-all duration-200 ${
-                  activeTab === "sale"
-                    ? "bg-[#1D4ED8] text-white"
-                    : "border border-[#1D4ED8] bg-white text-[#1D4ED8] hover:bg-gray-50"
-                }`}
-              >
-                For Sale
-              </button>
-            </div>
-          )}
-
-          <div
-            className={`flex-1 bg-white rounded-lg sm:rounded-2xl md:rounded-full shadow-md ${
-              isListings ? "shadow-none" : ""
-            } px-2 py-2`}
+        <div>
+          <Label
+            htmlFor="sizeRange"
+            className="text-sm font-medium text-gray-700 dark:text-gray-300"
           >
-            <div className="flex flex-col md:flex-row gap-4 justify-center items-center px-4  lg:ml-16 md:px-6 py-2 md:rounded-xl">
-              {/* Type Select */}
-              <div className="w-full md:w-40 flex flex-col justify-center relative">
-                <div className="text-xs text-gray-500">Type</div>
-                <button
-                  onClick={() => setIsPropertyTypeOpen(!isPropertyTypeOpen)}
-                  className="w-full text-left text-sm py-1"
-                >
-                  {selectedPropertyType}
-                  <ChevronDown className="float-right h-4 w-4" />
-                </button>
-                {isPropertyTypeOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-lg py-1 z-50">
-                    {propertyTypes.map((type) => (
-                      <div
-                        key={type}
-                        onClick={() => {
-                          setSelectedPropertyType(type);
-                          setIsPropertyTypeOpen(false);
-                        }}
-                        className="px-4 py-2 text-sm hover:bg-gray-50 cursor-pointer"
-                      >
-                        {type}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Separator - Hidden on mobile */}
-              <div className="hidden md:block h-10 w-px bg-gray-200"></div>
-
-              {/* Region Select */}
-              <div className="w-full md:w-40 flex flex-col justify-center relative">
-                <div className="text-xs text-gray-500">Region</div>
-                <button
-                  onClick={() => setIsRegionOpen(!isRegionOpen)}
-                  className={`w-full text-left text-sm py-1 flex items-center justify-between`}
-                >
-                  <span className="truncate">
-                    {selectedRegion || "All Regions"}
-                  </span>
-                  <ChevronDown className="h-4 w-4 flex-shrink-0" />
-                </button>
-                {isRegionOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-lg py-1 z-50">
-                    {moroccanRegions.map((region) => (
-                      <div
-                        key={region}
-                        onClick={() => {
-                          setSelectedRegion(region);
-                          setSelectedCity("");
-                          setIsRegionOpen(false);
-                        }}
-                        className="px-4 py-2 text-sm hover:bg-gray-50 cursor-pointer"
-                      >
-                        {region}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Separator - Hidden on mobile */}
-              <div className="hidden md:block h-10 w-px bg-gray-200"></div>
-
-              {/* City Select */}
-              <div className="w-full md:w-40 flex flex-col justify-center relative">
-                <div className="text-xs text-gray-500">City</div>
-                <button
-                  onClick={() => setIsCityOpen(!isCityOpen)}
-                  className={`w-full text-left text-sm py-1 flex items-center justify-between`}
-                >
-                  <span className="truncate">
-                    {selectedCity || "Select City"}
-                  </span>
-                  <ChevronDown className="h-4 w-4 flex-shrink-0" />
-                </button>
-                {isCityOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-lg py-1 z-50">
-                    {(citiesByRegion[selectedRegion] || []).map((city) => (
-                      <div
-                        key={city}
-                        onClick={() => {
-                          setSelectedCity(city);
-                          setIsCityOpen(false);
-                        }}
-                        className="px-4 py-2 text-sm hover:bg-gray-50 cursor-pointer"
-                      >
-                        {city}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex flex-col md:flex-row items-center gap-3 w-full md:w-auto md:ml-auto">
-                <button
-                  onClick={() => setShowAdvanced(!showAdvanced)}
-                  className="w-full md:w-auto px-6 md:px-10 py-2 md:py-3 text-sm font-medium rounded-full border border-[#1D4ED8] text-[#1D4ED8] hover:bg-gray-50 flex items-center justify-center gap-2"
-                >
-                  Advanced
-                  <Settings2 className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={handleSearch}
-                  className="w-full md:w-auto px-6 md:px-12 py-2 md:py-3 text-sm font-medium rounded-full bg-[#1D4ED8] text-white hover:bg-[#1D4ED8]/90 flex items-center justify-center gap-2"
-                >
-                  Search
-                  <Search className="h-4 w-4" />
-                </button>
-              </div>
+            Size: {sizeRange[0]}m² - {sizeRange[1]}m²
+          </Label>
+          <DualRangeSlider
+            id="sizeRange"
+            min={0}
+            max={1000} // Adjust max as needed
+            step={10}
+            value={sizeRange}
+            onValueChange={setSizeRange}
+            className="mt-2"
+          />
+        </div>
+      </div>
+      <Separator />
+      {/* Property Details Selects */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-1">
+          <Label
+            htmlFor="roomsSelect"
+            className="text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
+            Rooms
+          </Label>
+          <Select value={selectedRooms} onValueChange={setSelectedRooms}>
+            <SelectTrigger id="roomsSelect">
+              <SelectValue placeholder="Select rooms" />
+            </SelectTrigger>
+            <SelectContent>
+              {rooms.map((r) => (
+                <SelectItem key={r} value={r}>
+                  {r}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <Label
+            htmlFor="bathsSelect"
+            className="text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
+            Bathrooms
+          </Label>
+          <Select value={selectedBaths} onValueChange={setSelectedBaths}>
+            <SelectTrigger id="bathsSelect">
+              <SelectValue placeholder="Select baths" />
+            </SelectTrigger>
+            <SelectContent>
+              {baths.map((b) => (
+                <SelectItem key={b} value={b}>
+                  {b}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      <Separator />
+      {/* Amenities Checkboxes */}
+      <div>
+        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+          Amenities
+        </h3>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-4 gap-y-3">
+          {amenitiesList.map((amenity) => (
+            <div key={amenity} className="flex items-center space-x-2">
+              <Checkbox
+                id={`amenity-${amenity.toLowerCase().replace(/\s+/g, "-")}`}
+                checked={selectedAmenities.includes(amenity)}
+                onCheckedChange={(checked) => {
+                  setSelectedAmenities((prev) =>
+                    checked
+                      ? [...prev, amenity]
+                      : prev.filter((a) => a !== amenity)
+                  );
+                }}
+              />
+              <Label
+                htmlFor={`amenity-${amenity
+                  .toLowerCase()
+                  .replace(/\s+/g, "-")}`}
+                className="text-sm font-normal text-gray-600 dark:text-gray-400"
+              >
+                {amenity}
+              </Label>
             </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className={cn("w-full", variant === "home" ? "py-6" : "py-4")}>
+      {/* Type Toggle */}
+      <div
+        className={cn(
+          "mb-4",
+          variant === "home" || isListings ? "flex justify-center" : "hidden",
+          isListings && "md:hidden"
+        )}
+      >
+        <Tabs
+          defaultValue={activeTab}
+          onValueChange={handleTabChange}
+          className="w-auto"
+        >
+          <TabsList
+            className={cn(
+              variant === "home"
+                ? "bg-slate-100 dark:bg-slate-800 p-1 rounded-full"
+                : ""
+            )}
+          >
+            <TabsTrigger
+              value="rent"
+              className={cn(
+                variant === "home"
+                  ? "px-6 py-2.5 rounded-full text-sm font-medium"
+                  : "",
+                variant === "home" && activeTab === "rent"
+                  ? "bg-blue-600 text-white"
+                  : "text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+              )}
+            >
+              For Rent
+            </TabsTrigger>
+            <TabsTrigger
+              value="sale"
+              className={cn(
+                variant === "home"
+                  ? "px-6 py-2.5 rounded-full text-sm font-medium"
+                  : "",
+                variant === "home" && activeTab === "sale"
+                  ? "bg-blue-600 text-white"
+                  : "text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+              )}
+            >
+              For Sale
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
+
+      {/* Main Search Bar container with ShineBorder effect */}
+      <div
+        className={cn(
+          "relative rounded-full bg-card shadow-md dark:bg-neutral-900 overflow-hidden",
+          isListings ? "shadow-none border border-border" : "p-0.5"
+        )}
+      >
+        <ShineBorder
+          className="absolute inset-0 pointer-events-none"
+          shineColor={["#A07CFE", "#FE8A71", "#FFD700"]}
+          borderWidth={variant === "home" ? 2 : 1}
+        />
+
+        {/* Inner content - THIS IS WHAT WE WILL UNCOMMENT NEXT IF ShineBorder RENDERS */}
+        <div
+          className={cn(
+            "relative z-10 flex flex-col md:flex-row items-center gap-3 md:gap-2",
+            "bg-card p-4 md:p-3 rounded-full",
+            isListings ? "" : ""
+          )}
+        >
+          {/* Main Search Inputs - UNCOMMENTING THIS SECTION NOW */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-2 flex-grow w-full">
+            <Select
+              value={selectedPropertyType}
+              onValueChange={setSelectedPropertyType}
+            >
+              <SelectTrigger className="w-full text-sm h-12 rounded-full">
+                <SelectValue placeholder="Property Type" />
+              </SelectTrigger>
+              <SelectContent>
+                {propertyTypes.map((type) => (
+                  <SelectItem key={type} value={type} className="text-sm">
+                    {type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Region Combobox */}
+            <Popover open={regionOpen} onOpenChange={setRegionOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={regionOpen}
+                  className="w-full text-sm h-12 rounded-full justify-between flex items-center"
+                >
+                  <span className="truncate block">
+                    {selectedRegion
+                      ? moroccanRegions.find(
+                          (region) =>
+                            region.toLowerCase() ===
+                            selectedRegion.toLowerCase()
+                        ) || "Select Region..."
+                      : "Select Region..."}
+                  </span>
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-full min-w-[250px] md:min-w-[300px] p-0">
+                <Command>
+                  <CommandInput placeholder="Search region..." />
+                  <CommandList className="max-h-[250px]">
+                    <CommandEmpty>No region found.</CommandEmpty>
+                    <CommandGroup>
+                      {moroccanRegions.map((region) => (
+                        <CommandItem
+                          key={region}
+                          value={region}
+                          onSelect={(currentValue) => {
+                            setSelectedRegion(
+                              currentValue === selectedRegion.toLowerCase()
+                                ? ""
+                                : currentValue
+                            );
+                            setSelectedCity(""); // Reset city when region changes
+                            setRegionOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              selectedRegion.toLowerCase() ===
+                                region.toLowerCase()
+                                ? "opacity-100"
+                                : "opacity-0"
+                            )}
+                          />
+                          {region}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+
+            {/* City Combobox */}
+            <Popover open={cityOpen} onOpenChange={setCityOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={cityOpen}
+                  className="w-full text-sm h-12 rounded-full justify-between flex items-center"
+                  disabled={
+                    !selectedRegion ||
+                    selectedRegion === "All Regions" ||
+                    !citiesByRegion[selectedRegion]?.length
+                  }
+                >
+                  <span className="truncate block">
+                    {selectedCity
+                      ? (citiesByRegion[selectedRegion] || []).find(
+                          (city) =>
+                            city.toLowerCase() === selectedCity.toLowerCase()
+                        ) || "Select City..."
+                      : "Select City..."}
+                  </span>
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-full min-w-[250px] md:min-w-[300px] p-0">
+                <Command>
+                  <CommandInput placeholder="Search city..." />
+                  <CommandList className="max-h-[250px]">
+                    <CommandEmpty>No city found.</CommandEmpty>
+                    <CommandGroup>
+                      {(citiesByRegion[selectedRegion] || []).map((city) => (
+                        <CommandItem
+                          key={city}
+                          value={city}
+                          onSelect={(currentValue) => {
+                            setSelectedCity(
+                              currentValue === selectedCity.toLowerCase()
+                                ? ""
+                                : currentValue
+                            );
+                            setCityOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              selectedCity.toLowerCase() === city.toLowerCase()
+                                ? "opacity-100"
+                                : "opacity-0"
+                            )}
+                          />
+                          {city}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
+
+          {/* Action Buttons - Grouped - UNCOMMENTING THIS SECTION NOW */}
+          <div className="flex items-center gap-2 mt-3 md:mt-0 md:ml-2 w-full md:w-auto">
+            {isMobile ? (
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full md:w-auto h-12 rounded-full text-sm"
+                  >
+                    <Settings2 className="mr-2 h-4 w-4" /> Advanced
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="bottom" className="h-[85vh] flex flex-col">
+                  <SheetHeader>
+                    <SheetTitle>Advanced Filters</SheetTitle>
+                    <SheetClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
+                      <X className="h-4 w-4" />
+                      <span className="sr-only">Close</span>
+                    </SheetClose>
+                  </SheetHeader>
+                  <ScrollArea className="flex-grow mt-4 pr-3">
+                    <AdvancedFiltersContent />
+                  </ScrollArea>
+                  <SheetFooter className="mt-auto pt-4 border-t">
+                    <Button
+                      onClick={handleSearch}
+                      className="w-full text-base py-3 h-auto"
+                    >
+                      <Search className="mr-2 h-4 w-4" /> Apply Filters
+                    </Button>
+                  </SheetFooter>
+                </SheetContent>
+              </Sheet>
+            ) : (
+              <Button
+                variant="outline"
+                onClick={() => setShowAdvancedDesktop(!showAdvancedDesktop)}
+                className="h-12 rounded-full text-sm"
+              >
+                <Settings2 className="mr-2 h-4 w-4" /> Advanced
+              </Button>
+            )}
+            <Button
+              onClick={handleSearch}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground w-full md:w-auto h-12 rounded-full text-sm"
+            >
+              <Search className="mr-2 h-4 w-4" /> Search
+            </Button>
+          </div>
+
+          {/* 
+          <div
+            style={{
+              padding: "20px",
+              color: "lime",
+              border: "1px solid lime",
+              marginTop: "10px",
+              width: "100%",
+            }}
+          >
+            If you see this AND the SELECTS & BUTTONS ABOVE, these parts are
+            likely working.
+          </div>
+          */}
         </div>
       </div>
 
-      {/* Advanced Panel */}
-      <AnimatePresence>
-        {showAdvanced && (
-          <motion.div
+      {/* Collapsible Advanced Panel for Desktop - REMAINS COMMENTED */}
+
+      {!isMobile && (
+        <Collapsible
+          open={showAdvancedDesktop}
+          onOpenChange={setShowAdvancedDesktop}
+          className="relative mt-1"
+        >
+          <CollapsibleContent
             ref={advancedPanelRef}
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-            className="absolute left-0 right-0 mx-auto max-w-6xl px-4 z-50 mt-2"
+            className="CollapsibleContent absolute left-0 w-full z-20 overflow-hidden"
           >
-            <div className="bg-white rounded-xl shadow-xl p-6">
-              <div className="space-y-6">
-                {/* Price and Size Range */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                  <div>
-                    <label className="text-gray-900 text-sm block mb-3">
-                      Price: MAD {priceRange[0]} - MAD {priceRange[1]}
-                    </label>
-                    <Range
-                      step={1000}
-                      min={0}
-                      max={30000}
-                      values={priceRange}
-                      onChange={(values) => setPriceRange(values)}
-                      renderTrack={({ props, children }) => (
-                        <div
-                          {...props}
-                          className="h-1 w-full bg-gray-200 rounded-full"
-                        >
-                          <div
-                            className="h-full bg-[#1D4ED8] rounded-full"
-                            style={{
-                              width: `${
-                                ((priceRange[1] - priceRange[0]) /
-                                  (10000000 - 0)) *
-                                100
-                              }%`,
-                              left: `${(priceRange[0] / 30000) * 100}%`,
-                              position: "absolute",
-                            }}
-                          />
-                          {children}
-                        </div>
-                      )}
-                      renderThumb={({ props }) => (
-                        <div
-                          {...props}
-                          className="h-4 w-4 bg-white border-2 border-[#1D4ED8] rounded-full focus:outline-none focus:ring-2 focus:ring-[#1D4ED8] focus:ring-offset-2"
-                        />
-                      )}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-gray-900 text-sm block mb-3">
-                      Size: {sizeRange[0]} - {sizeRange[1]} m²
-                    </label>
-                    <Range
-                      step={1}
-                      min={0}
-                      max={1000}
-                      values={sizeRange}
-                      onChange={(values) => setSizeRange(values)}
-                      renderTrack={({ props, children }) => (
-                        <div
-                          {...props}
-                          className="h-1 w-full bg-gray-200 rounded-full"
-                        >
-                          <div
-                            className="h-full bg-[#1D4ED8] rounded-full"
-                            style={{
-                              width: `${
-                                ((sizeRange[1] - sizeRange[0]) / 1000) * 100
-                              }%`,
-                              left: `${(sizeRange[0] / 1000) * 100}%`,
-                              position: "absolute",
-                            }}
-                          />
-                          {children}
-                        </div>
-                      )}
-                      renderThumb={({ props }) => (
-                        <div
-                          {...props}
-                          className="h-4 w-4 bg-white border-2 border-[#1D4ED8] rounded-full focus:outline-none focus:ring-2 focus:ring-[#1D4ED8] focus:ring-offset-2"
-                        />
-                      )}
-                    />
-                  </div>
-                </div>
-
-                {/* Property Details */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <CustomSelect
-                    label="Rooms"
-                    value={selectedRooms}
-                    options={rooms}
-                    onChange={setSelectedRooms}
-                    isOpen={isRoomsOpen}
-                    setIsOpen={setIsRoomsOpen}
-                  />
-
-                  <CustomSelect
-                    label="Bathrooms"
-                    value={selectedBaths}
-                    options={baths}
-                    onChange={setSelectedBaths}
-                    isOpen={isBathsOpen}
-                    setIsOpen={setIsBathsOpen}
-                  />
-                </div>
-
-                {/* Amenities */}
-                <div>
-                  <h3 className="text-gray-900 text-sm font-medium mb-3">
-                    Amenities:
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-y-3">
-                    {[
-                      "Bed Linens",
-                      "Carbon Alarm",
-                      "Check-in Lockbox",
-                      "Coffee Maker",
-                      "Dishwasher",
-                      "Extra Pillows",
-                      "First Aid Kit",
-                      "Hangers",
-                      "Iron",
-                      "Microwave",
-                      "Refrigerator",
-                      "Security Cameras",
-                      "Smoke alarm",
-                      "TV Standard Cable",
-                    ].map((amenity) => (
-                      <label
-                        key={amenity}
-                        className="flex items-center gap-2 text-sm text-gray-600"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedAmenities.includes(amenity)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedAmenities([
-                                ...selectedAmenities,
-                                amenity,
-                              ]);
-                            } else {
-                              setSelectedAmenities(
-                                selectedAmenities.filter((a) => a !== amenity)
-                              );
-                            }
-                          }}
-                          className="rounded border-gray-300 text-[#1D4ED8] focus:ring-0 focus:ring-offset-0"
-                        />
-                        <span>{amenity}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              </div>
+            <div className="bg-card border rounded-lg shadow-lg p-4 md:p-6 mt-2">
+              <AdvancedFiltersContent />
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </CollapsibleContent>
+        </Collapsible>
+      )}
+
+      {/* 
+      <div
+                            style={{
+          color: "cyan",
+          border: "1px solid cyan",
+          padding: "10px",
+          marginTop: "10px",
+        }}
+      >
+        IF YOU SEE THIS, THE HANG IS IN THE COMMENTED OUT SECTION.
+            </div>
+      */}
     </div>
   );
 }
+
+// Ensure you have these animations in your global CSS if not part of Shadcn default:
+/*
+@keyframes slideDownAndFade {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideUpAndFade {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-10px); }
+}
+.CollapsibleContent[data-state='open'] {
+  animation: slideDownAndFade 300ms cubic-bezier(0.87, 0, 0.13, 1);
+}
+.CollapsibleContent[data-state='closed'] {
+  animation: slideUpAndFade 300ms cubic-bezier(0.87, 0, 0.13, 1);
+}
+*/
+
+// Note on moroccanRegions and citiesByRegion:
+// Data for moroccanRegions and citiesByRegion should be kept as is, or moved to a constants file if preferred.
+// For moroccanRegions, I added: moroccanRegions.unshift("All Regions"); to ensure "All Regions" is always an option,
+// particularly if the initial selectedRegion is empty or explicitly "All Regions".
+// The Select components will use their placeholder prop if the value is empty or matches the placeholder text.
+// The "Rooms" and "Baths: Any" default values are handled as placeholders or actual selectable items.

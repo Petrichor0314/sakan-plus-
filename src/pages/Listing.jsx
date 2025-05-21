@@ -1,4 +1,3 @@
-// File: src/pages/Listing.jsx
 import { doc, getDoc } from "firebase/firestore";
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";

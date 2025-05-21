@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef, useEffect } from "react";
 
 export default function CustomSelect({
   value,
@@ -8,9 +8,29 @@ export default function CustomSelect({
   setIsOpen,
   label,
 }) {
+  const selectRef = useRef(null);
+
+  // Handle click outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (selectRef.current && !selectRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    }
+
+    // Add event listener if dropdown is open
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen, setIsOpen]);
+
   return (
     <>
-      <div className="relative">
+      <div className="relative" ref={selectRef}>
         <label className="text-gray-900 text-sm block mb-2">{label}</label>
         <button
           type="button"
